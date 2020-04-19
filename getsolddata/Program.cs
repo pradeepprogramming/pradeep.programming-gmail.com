@@ -1,9 +1,11 @@
-﻿using librets;
+﻿using getsolddata.Modal;
+using librets;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Configuration;
 using System.Data;
+using System.Data.Spatial;
 using System.Data.SqlClient;
 using System.IO;
 using System.Linq;
@@ -15,6 +17,7 @@ namespace getsolddata
 {
     class Program
     {
+        public static SqlConnection con = null;
         static void Main(string[] args)
         {
 
@@ -51,16 +54,39 @@ namespace getsolddata
 
             }
 
-            Console.ReadLine();
+            //Console.ReadLine();
         }
-
+        public class OldMls
+        {
+            public string Mls { get; set; }
+            public string Status { get; set; }
+        }
         private static void processing(List<string> classTypes, RetsSession session)
         {
-            var statuslist = new List<string> { "A"};
+            List<OldMls> oldmls = new List<OldMls>();
+            string strcon = ConfigurationManager.ConnectionStrings["local"].ToString();
+            con = new SqlConnection(strcon);
+
+            if (con.State == ConnectionState.Closed)
+            {
+                con.Open();
+            }
+            SqlCommand cmd = new SqlCommand(@"select mlsid, left(propertystatus,1) propertystatus from PropertyDetails where mlsid is not null and PropertyStatus is not null group by mlsid , PropertyStatus", con);
+            var rder = cmd.ExecuteReader();
+            while (rder.Read())
+            {
+                oldmls.Add(new OldMls
+                {
+                    Mls = rder.GetString(0),
+                    Status = rder.GetString(1)
+                });
+            }
+
+            var statuslist = new List<string> { "U", "A" };
             foreach (string status in statuslist)
             {
                 RetsVersion version = session.GetDetectedRetsVersion();
-                string query = $"(Status = {status})";
+                string query = $"(Status = {status}),(TimestampSql= {DateTime.Now.AddDays(-1).ToString("yyyy-MM-dd")}+)";//
                 //string query = "(TimestampSql= Sept 18, 2019)";
 
                 SearchRequest searchRequest = session.CreateSearchRequest(
@@ -75,6 +101,10 @@ namespace getsolddata
                 SearchResultSet results = session.Search(searchRequest);
                 IEnumerable columns = results.GetColumns();
                 Dictionary<string, string> _dictRETS = new Dictionary<string, string>();
+                Dictionary<string, string> _dictRETSUpdate = new Dictionary<string, string>();
+                List<ModalLocation> forlocation = new List<ModalLocation>();
+                List<Dictionary<string, string>> _dictRETSlist = new List<Dictionary<string, string>>();
+                List<Dictionary<string, string>> _dictRETSUpdatelist = new List<Dictionary<string, string>>();
                 //if (isCompareListing)
                 //{
                 //    recordprocessed += CompareListing(results, Ownertype);
@@ -82,75 +112,189 @@ namespace getsolddata
                 //}
                 //else
                 {
-                    List<Dictionary<string, string>> _dictRETSlist = new List<Dictionary<string, string>>();
+                    
                     var imgdownloadlist = new List<PhotoDownlaodObject>();
-                    int recordprocessed= 0;
+                    int recordprocessed = 0;
+                    //int rowcount = results.GetCount();
+                    //var ch = results.HasMaxRows();
                     while (results.HasNext())
                     {
                         recordprocessed++;
-                        _dictRETS = new Dictionary<string, string>();
-                        foreach (string column in columns)
+                        var mls = results.GetString("MLS");
+                        var newstatus = results.GetString("Status");
+                        var ch1 = oldmls.Where(w => w.Mls == mls & w.Status == newstatus);
+                        if ((newstatus == "U" || ch1 == null))
                         {
-                            try
-                            {
-                                _dictRETS.Add(column, results.GetString(column));
-                            }
-                            catch (Exception ex)
-                            {
-                                Console.WriteLine(ex.Message);
-                                Console.WriteLine("______________________________________");
-                            }
-
-                        }
-
-                        if (_dictRETS["MLS"] != null && _dictRETS["MLS"] != string.Empty)
-                        {
-                            var mls = _dictRETS["MLS"];
-                            _dictRETSlist.Add(_dictRETS);
-                            var data = _dictRETS["TimestampSql"];
-                            if (DateTime.Parse(data) >=DateTime.Now.AddMonths(-6))
+                            if ((newstatus == "U" && ch1 == null)) //
                             {
 
-                                imgdownloadlist.Add(
-                                    new PhotoDownlaodObject()
+                                _dictRETS = new Dictionary<string, string>();
+
+                                foreach (string column in columns)
+                                {
+                                    try
                                     {
-                                        MLSID = _dictRETS["MLS"],
-                                        LastUpdated = DateTime.Now
-                                    });
+                                        _dictRETS.Add(column, results.GetString(column));
+                                    }
+                                    catch (Exception ex)
+                                    {
+                                        Console.WriteLine(ex.Message);
+                                        Console.WriteLine("______________________________________");
+                                    }
 
-                            }
-                            if (_dictRETSlist.Count >= 200)
-                            {
-                                try
+                                }
+
+
+                                if (mls!= null && mls != string.Empty)
                                 {
 
-                                    var table = ListtoDataTableConverter.ToDataTable(_dictRETSlist);
-                                    Task.Factory.StartNew(() =>
-                                    {
-                                        BulkInsert(table);
-                                    });
                                     
-                                    _dictRETSlist.Clear();
-                                }
-                                catch (Exception ex)
-                                {
-                                    Console.WriteLine(ex.Message);
-                                    Console.WriteLine("______________________________________");
+                                    _dictRETSlist.Add(_dictRETS);
+                                    var data = _dictRETS["TimestampSql"];
+                                    var apiaddress = new ModalLocation
+                                    {
+                                        MLS = mls,
+                                        City = _dictRETS["Area"],
+                                        State = _dictRETS["Province"],
+                                        Zip = _dictRETS["PostalCode"],
+                                        Address = _dictRETS["Address"],
+                                        Country = "Canada"
+                                    };
+                                    SetGetLatLongInProperty(apiaddress, _dictRETS);
+                                    //if (DateTime.Parse(data) >=DateTime.Now.AddMonths(-6))
+                                    //{
+
+                                    //    imgdownloadlist.Add(
+                                    //        new PhotoDownlaodObject()
+                                    //        {
+                                    //            MLSID = _dictRETS["MLS"],
+                                    //            LastUpdated = DateTime.Now
+                                    //        });
+
+                                    //}
+                                    if (_dictRETSlist.Count >= 20)
+                                    {
+                                        try
+                                        {
+
+                                            var table = ListtoDataTableConverter.ToDataTable(_dictRETSlist);
+                                            Task.Factory.StartNew(() =>
+                                            {
+                                                BulkInsert(table, "vobdata");
+                                            });
+
+                                            _dictRETSlist.Clear();
+                                        }
+                                        catch (Exception ex)
+                                        {
+                                            Console.WriteLine(ex.Message);
+                                            Console.WriteLine("______________________________________");
+                                        }
+                                    }
                                 }
                             }
+                            else
+                            {
+                                _dictRETSUpdate = new Dictionary<string, string>();
+                                List<string> collist = new List<string> { "SoldPrice", "SoldDate", "Status", "MLS", "TimestampSql" };
+                                foreach (string column in collist)
+                                {
+                                    try
+                                    {
+                                        _dictRETSUpdate.Add(column, results.GetString(column));
+                                    }
+                                    catch (Exception ex)
+                                    {
+                                        Console.WriteLine(ex.Message);
+                                        Console.WriteLine("______________________________________");
+                                    }
+
+                                }
+
+
+                                if (_dictRETSUpdate["SoldPrice"] != null && _dictRETSUpdate["SoldPrice"].Trim() != string.Empty)
+                                {
+
+                                    
+                                    _dictRETSUpdatelist.Add(_dictRETSUpdate);
+                                    //var data = _dictRETS["TimestampSql"];
+                                    //var apiaddress = new ModalLocation
+                                    //{
+                                    //    MLS = mls,
+                                    //    City = _dictRETS["Area"],
+                                    //    State = _dictRETS["Province"],
+                                    //    Zip = _dictRETS["PostalCode"],
+                                    //    Address = _dictRETS["Address"],
+                                    //    Country = "Canada"
+                                    //};
+                                    //SetGetLatLongInProperty(apiaddress, _dictRETS);
+                                    //if (DateTime.Parse(data) >=DateTime.Now.AddMonths(-6))
+                                    //{
+
+                                    //    imgdownloadlist.Add(
+                                    //        new PhotoDownlaodObject()
+                                    //        {
+                                    //            MLSID = _dictRETS["MLS"],
+                                    //            LastUpdated = DateTime.Now
+                                    //        });
+
+                                    //}
+                                    if (_dictRETSUpdatelist.Count >= 20)
+                                    {
+                                        try
+                                        {
+
+                                            var table = ListtoDataTableConverter.ToDataTable(_dictRETSUpdatelist);
+                                            Task.Factory.StartNew(() =>
+                                            {
+                                                BulkInsert(table,"updatetable");
+                                            });
+
+                                            _dictRETSUpdatelist.Clear();
+                                        }
+                                        catch (Exception ex)
+                                        {
+                                            Console.WriteLine(ex.Message);
+                                            Console.WriteLine("______________________________________");
+                                        }
+                                    }
+                                }
+                                
+                            }
+                        }
+                        else
+                        {
+
                         }
                         _dictRETS = null;
+                        _dictRETSUpdate = null;
                         Console.WriteLine(recordprocessed);
 
                     }
-                    var table1 = ListtoDataTableConverter.ToDataTable(_dictRETSlist);
-                    Task.Factory.StartNew(() =>
+                    if (_dictRETSlist.Count > 0)
                     {
-                        BulkInsert(table1);
-                    });
 
-                    DownloadAllListingPhotos(imgdownloadlist, session);
+                        var table1 = ListtoDataTableConverter.ToDataTable(_dictRETSlist);
+                        Task.Factory.StartNew(() =>
+                        {
+                            BulkInsert(table1,"vobdata");
+                        });
 
+                    }
+                    if (_dictRETSUpdatelist.Count > 0)
+                    {
+
+                        var table1 = ListtoDataTableConverter.ToDataTable(_dictRETSUpdatelist);
+                        Task.Factory.StartNew(() =>
+                        {
+                            BulkInsert(table1, "updatetable");
+                        });
+
+                    }
+                    if (imgdownloadlist.Count > 0)
+                        DownloadAllListingPhotos(imgdownloadlist, session);
+
+                   
                     //while (results.HasNext())
                     //{
 
@@ -194,27 +338,69 @@ namespace getsolddata
                     ////close file
                     //wr.Close();
                 }
-               // break;
+                // break;
+            }
+            cmd = new SqlCommand("mergevowdata", con);
+            cmd.CommandType = CommandType.StoredProcedure;
+            cmd.ExecuteNonQuery();
+
+        }
+
+
+        private static void SetGetLatLongInProperty(ModalLocation apiAddress, Dictionary<string, string> dictRETS)
+        {
+
+            var addressString = $" Address = [{apiAddress.Address}] City = [{apiAddress.City}] State = [{apiAddress.State}] Zip = [{apiAddress.Zip}] Country = [{apiAddress.Country}]";
+            try
+            {
+                //LocationAPIhitCount++;
+                bool gotLatLong = false;
+
+                #region Old COde
+
+                // var latlong = gls.GetLatLongFromAddress(apiAddress);
+                var latlong = new RealEstate.AzureMap.SearchAddress().GetLatLong(apiAddress);
+                if (latlong != null)
+                {
+                    if (!string.IsNullOrEmpty(latlong.Latitude.ToString()))
+                    {
+                        if (latlong.Latitude != 0 && latlong.Longitude != 0)
+                        {
+                            gotLatLong = true;
+                            dictRETS.Add("Latitude", latlong.Latitude.ToString());
+                            dictRETS.Add("Longitude", latlong.Longitude.ToString());
+                            //var location = $"Point({latlong.Longitude} {latlong.Latitude})";
+                            //dictRETS.Add("GeoData", DbGeometry.PointFromText(location, 4326));
+
+                        }
+                    }
+
+                }
+                #endregion
+
+            }
+            catch (Exception ex)
+            {
+
             }
         }
 
-        public static void BulkInsert(DataTable dt)
+        public static void BulkInsert(DataTable dt, string table)
         {
 
             Console.WriteLine($"comming to save record count {dt.Rows.Count}");
-            string strcon = @"data source=WIN-7AMPTHSKNTN\MSSQLSERVER01;initial catalog=RealEstateCurrent;integrated security=True;MultipleActiveResultSets=True;";
-            using (SqlConnection sqlConnection = new SqlConnection(strcon))
+            
             {
-                if (sqlConnection.State == ConnectionState.Closed)
+                if (con.State == ConnectionState.Closed)
                 {
-                    sqlConnection.Open();
+                    con.Open();
                 }
-                using (SqlBulkCopy bulkCopy = new SqlBulkCopy(sqlConnection))
+                using (SqlBulkCopy bulkCopy = new SqlBulkCopy(con))
                 {
                     try
                     {
 
-                        bulkCopy.DestinationTableName = "vobdata";
+                        bulkCopy.DestinationTableName = table;
                         bulkCopy.WriteToServer(dt);
                         dt.Dispose();
 
@@ -231,8 +417,7 @@ namespace getsolddata
 
         public static void DownloadAllListingPhotos(List<PhotoDownlaodObject> _PhotoDownlaodObject, RetsSession Session)
         {
-            Task.Factory.StartNew(() =>
-            {
+            
                 Console.WriteLine(_PhotoDownlaodObject.Count());
                 _PhotoDownlaodObject.ForEach(objProp =>
                 {
@@ -259,7 +444,7 @@ namespace getsolddata
                                 request.AddObject(CurrentMLS, intCurrentPhotoNo);
                                 string strFilename = string.Empty;
                                 // Create the file name.
-                                
+
                                 strFilename = CurrentMLS + "_" + intCurrentPhotoNo + ".jpg";
                                 string fullPath = (Path.Combine(photoFilePath, strFilename));
                                 if (!File.Exists(fullPath))
@@ -292,7 +477,7 @@ namespace getsolddata
                         while (objectId > 0);
                         //PropertyPhotoService _photoService = new PropertyPhotoService();
                         //_photoService.SavePropertyDetails(objPhotos);
-                        
+
                     }
 
                     catch (Exception ex)
@@ -304,7 +489,7 @@ namespace getsolddata
                     icount++;
                 });
                 Console.WriteLine("Image downloading Completed");
-            });
+            
 
         }
 
@@ -333,9 +518,13 @@ namespace getsolddata
                 int i = 0;
                 values[i] = 0;
                 i++;
-                foreach (KeyValuePair<string, string> pair in item)
+                foreach (DataColumn key in dataTable.Columns)
                 {
-                    values[i] = pair.Value;
+                    if (key.ColumnName == "ID")
+                    {
+                        continue;
+                    }
+                    values[i] = item[key.ColumnName];
                     i++;
                 }
 
