@@ -14,5 +14,6 @@ namespace getsolddata.Modal
         public string Address { get; set; }
         public string Zip { get; set; }
         public string Country { get; internal set; }
+        public string Id { get; internal set; }
     }
 }

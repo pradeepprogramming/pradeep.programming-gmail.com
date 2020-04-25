@@ -64,13 +64,7 @@ namespace getsolddata
         private static void processing(List<string> classTypes, RetsSession session)
         {
             List<OldMls> oldmls = new List<OldMls>();
-            string strcon = ConfigurationManager.ConnectionStrings["local"].ToString();
-            con = new SqlConnection(strcon);
-
-            if (con.State == ConnectionState.Closed)
-            {
-                con.Open();
-            }
+            
             SqlCommand cmd = new SqlCommand(@"select mlsid, left(propertystatus,1) propertystatus from PropertyDetails where mlsid is not null and PropertyStatus is not null group by mlsid , PropertyStatus", con);
             var rder = cmd.ExecuteReader();
             while (rder.Read())
@@ -385,36 +379,7 @@ namespace getsolddata
             }
         }
 
-        public static void BulkInsert(DataTable dt, string table)
-        {
-
-            Console.WriteLine($"comming to save record count {dt.Rows.Count}");
-            
-            {
-                if (con.State == ConnectionState.Closed)
-                {
-                    con.Open();
-                }
-                using (SqlBulkCopy bulkCopy = new SqlBulkCopy(con))
-                {
-                    try
-                    {
-
-                        bulkCopy.DestinationTableName = table;
-                        bulkCopy.WriteToServer(dt);
-                        dt.Dispose();
-
-                    }
-                    catch (Exception ex)
-                    {
-
-
-                    }
-                }
-            }
-
-        }
-
+        
         public static void DownloadAllListingPhotos(List<PhotoDownlaodObject> _PhotoDownlaodObject, RetsSession Session)
         {
             
