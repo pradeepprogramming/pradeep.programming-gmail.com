@@ -18,7 +18,7 @@ namespace getsolddata
     class Program
     {
         public static SqlConnection con = null;
-         
+
         static void Main(string[] args)
         {
 
@@ -93,9 +93,9 @@ namespace getsolddata
             {
                 RetsVersion version = session.GetDetectedRetsVersion();
                 string query = $"(Status = {status}),(TimestampSql= {DateTime.Now.AddDays(-1).ToString("yyyy-MM-dd")}+)";//
-                //string query = "(TimestampSql= Sept 18, 2019)";
+                                                                                                                          //string query = "(TimestampSql= Sept 18, 2019)";
 
-                
+
                 foreach (string classType in classTypes)
                 {
                     SearchRequest searchRequest = session.CreateSearchRequest("Property", classType, query);
@@ -114,13 +114,23 @@ namespace getsolddata
                     while (results.HasNext())
                     {
                         num++;
-                        var mls = results.GetString("MLS");
-                        var newstatus = results.GetString("Status");
+                        string mls, newstatus;
+                        try
+                        {
+                            mls = results.GetString("MLS");
+                            var cc = results.GetColumns();
+                            newstatus = results.GetString("Status");
+                        }
+                        catch (Exception ex)
+                        {
+                            continue;
+                        }
                         var ch1 = oldmls.Where(w => w.Mls == mls & w.Status == newstatus);
                         if (newstatus == "U" || ch1 == null)
                         {
                             if (newstatus == "U" && ch1 != null)
                             {
+                                
                                 _dictRETS = new Dictionary<string, string>();
                                 foreach (string str5 in new List<string>()
                                 {
@@ -141,7 +151,8 @@ namespace getsolddata
                                         Console.WriteLine("______________________________________");
                                     }
                                 }
-                                if ((_dictRETS["SoldPrice"] == null ? false : _dictRETS["SoldPrice"].Trim() != string.Empty))
+                                //var soldprice=results.GetString("SoldPrice");
+                                //if (_dictRETS["SoldPrice"] != null && _dictRETS["SoldPrice"].Trim() != string.Empty)
                                 {
                                     _dictRETSUpdatelist.Add(_dictRETS);
                                     if (_dictRETSUpdatelist.Count >= 20)
@@ -211,8 +222,12 @@ namespace getsolddata
                                 }
                             }
                         }
+                        else
+                        {
+                            Console.WriteLine("in else");
+                        }
                         _dictRETS = null;
-                        
+
                         Console.WriteLine(num);
                     }
                     if (_dictRETSlist.Count > 0)
@@ -249,7 +264,7 @@ namespace getsolddata
                 ////}
                 ////else
                 //{
-                    
+
                 //    var imgdownloadlist = new List<PhotoDownlaodObject>();
                 //    int recordprocessed = 0;
                 //    //int rowcount = results.GetCount();
@@ -285,7 +300,7 @@ namespace getsolddata
                 //                if (mls!= null && mls != string.Empty)
                 //                {
 
-                                    
+
                 //                    _dictRETSlist.Add(_dictRETS);
                 //                    var data = _dictRETS["TimestampSql"];
                 //                    var apiaddress = new ModalLocation
@@ -352,7 +367,7 @@ namespace getsolddata
                 //                if (_dictRETSUpdate["SoldPrice"] != null && _dictRETSUpdate["SoldPrice"].Trim() != string.Empty)
                 //                {
 
-                                    
+
                 //                    _dictRETSUpdatelist.Add(_dictRETSUpdate);
                 //                    //var data = _dictRETS["TimestampSql"];
                 //                    //var apiaddress = new ModalLocation
@@ -396,7 +411,7 @@ namespace getsolddata
                 //                        }
                 //                    }
                 //                }
-                                
+
                 //            }
                 //        }
                 //        else
@@ -431,50 +446,50 @@ namespace getsolddata
                 //    if (imgdownloadlist.Count > 0)
                 //        DownloadAllListingPhotos(imgdownloadlist, session);
 
-                   
-                    //while (results.HasNext())
-                    //{
 
-                    //    foreach (string column in columns)
-                    //    {
-                    //        _dictRETS.Add(column, results.GetString(column));
-                    //    }
-                    //    _dictRETSlist.Add(_dictRETS);
-                    //    _dictRETS = null;
-                    //    _dictRETS = new Dictionary<string, string>();
-                    //}
-                    //var dt = ListtoDataTableConverter.ToDataTable(_dictRETSlist);
+                //while (results.HasNext())
+                //{
 
-                    //StreamWriter wr = new StreamWriter(@"D:\\BookA.xls");
+                //    foreach (string column in columns)
+                //    {
+                //        _dictRETS.Add(column, results.GetString(column));
+                //    }
+                //    _dictRETSlist.Add(_dictRETS);
+                //    _dictRETS = null;
+                //    _dictRETS = new Dictionary<string, string>();
+                //}
+                //var dt = ListtoDataTableConverter.ToDataTable(_dictRETSlist);
+
+                //StreamWriter wr = new StreamWriter(@"D:\\BookA.xls");
 
 
-                    //for (int i = 0; i < dt.Columns.Count; i++)
-                    //{
-                    //    wr.Write(dt.Columns[i].ToString().ToUpper() + "\t");
-                    //}
+                //for (int i = 0; i < dt.Columns.Count; i++)
+                //{
+                //    wr.Write(dt.Columns[i].ToString().ToUpper() + "\t");
+                //}
 
-                    //wr.WriteLine();
+                //wr.WriteLine();
 
-                    ////write rows to excel file
-                    //for (int i = 0; i < (dt.Rows.Count); i++)
-                    //{
-                    //    for (int j = 0; j < dt.Columns.Count; j++)
-                    //    {
-                    //        if (dt.Rows[i][j] != null)
-                    //        {
-                    //            wr.Write(Convert.ToString(dt.Rows[i][j]) + "\t");
-                    //        }
-                    //        else
-                    //        {
-                    //            wr.Write("\t");
-                    //        }
-                    //    }
-                    //    //go to next line
-                    //    wr.WriteLine();
-                    //}
-                    ////close file
-                    //wr.Close();
-               // }
+                ////write rows to excel file
+                //for (int i = 0; i < (dt.Rows.Count); i++)
+                //{
+                //    for (int j = 0; j < dt.Columns.Count; j++)
+                //    {
+                //        if (dt.Rows[i][j] != null)
+                //        {
+                //            wr.Write(Convert.ToString(dt.Rows[i][j]) + "\t");
+                //        }
+                //        else
+                //        {
+                //            wr.Write("\t");
+                //        }
+                //    }
+                //    //go to next line
+                //    wr.WriteLine();
+                //}
+                ////close file
+                //wr.Close();
+                // }
                 // break;
             }
             cmd = new SqlCommand("mergevowdata", con);
@@ -526,7 +541,7 @@ namespace getsolddata
         {
 
             Console.WriteLine($"comming to save record count {dt.Rows.Count}");
-            
+
             {
                 if (con.State == ConnectionState.Closed)
                 {
@@ -554,43 +569,43 @@ namespace getsolddata
 
         public static void DownloadAllListingPhotos(List<PhotoDownlaodObject> _PhotoDownlaodObject, RetsSession Session)
         {
-            
-                Console.WriteLine(_PhotoDownlaodObject.Count());
-                _PhotoDownlaodObject.ForEach(objProp =>
+
+            Console.WriteLine(_PhotoDownlaodObject.Count());
+            _PhotoDownlaodObject.ForEach(objProp =>
+            {
+                int icount = 1;
+                Console.WriteLine("image count" + icount);
+                try
                 {
-                    int icount = 1;
-                    Console.WriteLine("image count" + icount);
-                    try
-                    {
-                        string photoFilePath = $@"D:\\testaccount\PropertyPhoto\{objProp.MLSID}";
-                        bool exists = System.IO.Directory.Exists((photoFilePath));
-                        if (!exists)
-                            System.IO.Directory.CreateDirectory((photoFilePath));
+                    string photoFilePath = $@"D:\\testaccount\PropertyPhoto\{objProp.MLSID}";
+                    bool exists = System.IO.Directory.Exists((photoFilePath));
+                    if (!exists)
+                        System.IO.Directory.CreateDirectory((photoFilePath));
                         //taken from app.config in  connection example
                         string CurrentMLS = objProp.MLSID;
-                        int intCurrentPhotoNo = 1;
+                    int intCurrentPhotoNo = 1;
 
                         //loop through objects until obj is null. It does not error out if the objectID does not exist.
                         ObjectDescriptor obj;
-                        List<PropertyPhoto> objPhotos = new List<PropertyPhoto>();
-                        int objectId = 0;
-                        do
+                    List<PropertyPhoto> objPhotos = new List<PropertyPhoto>();
+                    int objectId = 0;
+                    do
+                    {
+                        using (librets.GetObjectRequest request = new GetObjectRequest("Property", "Photo"))
                         {
-                            using (librets.GetObjectRequest request = new GetObjectRequest("Property", "Photo"))
-                            {
-                                request.AddObject(CurrentMLS, intCurrentPhotoNo);
-                                string strFilename = string.Empty;
+                            request.AddObject(CurrentMLS, intCurrentPhotoNo);
+                            string strFilename = string.Empty;
                                 // Create the file name.
 
                                 strFilename = CurrentMLS + "_" + intCurrentPhotoNo + ".jpg";
-                                string fullPath = (Path.Combine(photoFilePath, strFilename));
-                                if (!File.Exists(fullPath))
+                            string fullPath = (Path.Combine(photoFilePath, strFilename));
+                            if (!File.Exists(fullPath))
+                            {
+                                GetObjectResponse response = Session.GetObject(request);
+                                obj = response.NextObject();
+                                objectId = obj.GetObjectId();
+                                if (objectId > 0)
                                 {
-                                    GetObjectResponse response = Session.GetObject(request);
-                                    obj = response.NextObject();
-                                    objectId = obj.GetObjectId();
-                                    if (objectId > 0)
-                                    {
                                         // get the bytes of the downloaded image
                                         byte[] imageBytes = obj.GetDataAsBytes();
                                         // Write the file.
@@ -605,28 +620,28 @@ namespace getsolddata
                                         // Increment photo number.
                                         intCurrentPhotoNo++;
 
-                                    }
                                 }
-
                             }
 
                         }
-                        while (objectId > 0);
+
+                    }
+                    while (objectId > 0);
                         //PropertyPhotoService _photoService = new PropertyPhotoService();
                         //_photoService.SavePropertyDetails(objPhotos);
 
                     }
 
-                    catch (Exception ex)
-                    {
-                        Console.WriteLine(ex.Message);
-                        Console.WriteLine("______________________________________");
-                    }
+                catch (Exception ex)
+                {
+                    Console.WriteLine(ex.Message);
+                    Console.WriteLine("______________________________________");
+                }
 
-                    icount++;
-                });
-                Console.WriteLine("Image downloading Completed");
-            
+                icount++;
+            });
+            Console.WriteLine("Image downloading Completed");
+
 
         }
 
