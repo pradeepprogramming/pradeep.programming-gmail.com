@@ -125,10 +125,12 @@ namespace getsolddata
                         {
                             continue;
                         }
+
                         var ch1 = oldmls.Where(w => w.Mls == mls & w.Status == newstatus);
-                        if (newstatus == "U" || ch1 == null)
+                        var rr=ch1.Count();
+                        if (newstatus == "U" || rr ==0)
                         {
-                            if (newstatus == "U" && ch1 != null)
+                            if (newstatus == "U" && rr > 0)
                             {
                                 
                                 _dictRETS = new Dictionary<string, string>();
@@ -138,7 +140,8 @@ namespace getsolddata
                                     "SoldDate",
                                     "Status",
                                     "MLS",
-                                    "TimestampSql"
+                                    "TimestampSql",
+                                    "PhyHandiEquipped"
                                 })
                                 {
                                     try
@@ -174,7 +177,7 @@ namespace getsolddata
                             else
                             {
                                 _dictRETS = new Dictionary<string, string>();
-                                foreach (string column in columns)
+                                foreach (string column in new List<string> { "OpenHouseDate", "Room12Desc2", "ListPrice", "WashroomsType1Level", "Room10Desc2", "Room11Width", "Room12Width", "Room5Width", "LotIrregularities", "LotFrontIncomplete", "SpecialDesignation6", "Level7", "Address", "LeaseTerm", "Room4Desc1", "OpenHouseFrom3", "MLS", "Room6Desc3", "Room8Desc3", "Room3Desc2", "TimestampSql", "CacIncluded", "Pool", "Room12", "Drive", "FarmAgriculture", "RoomsPlus", "StreetAbbreviation", "SuspendedDate", "Level3", "Level1", "ApproxAge", "Zoning", "ContractDate", "Room7Length", "SpecialDesignation4", "MunicipalityCode", "GreenPropInfoStatement", "PossessionRemarks", "OtherStructures2", "ApproxSquareFootage", "Level4", "Room10", "Basement1", "Status", "AddlMonthlyFees", "WashroomsType1Pcs", "Room3Length", "Level12", "WashroomsType2", "WashroomsType5", "PropertyMgmtCo", "Level5", "Room11Desc1", "Room11Desc2", "LastStatus", "WashroomsType4Pcs", "OtherStructures1", "Uffi", "FireplaceStove", "Condition", "Room10Desc1", "OpenHouseUpDtTimestamp", "ConditionalExpiryDate", "PerListingPrice", "ParcelId", "AirConditioning", "Room2Desc3", "OutofAreaMunicipality", "SoldDate", "Room4Desc3", "DirectionsCrossStreets", "HydroIncluded", "AreaCode", "Level11", "Room6Desc1", "SpecialDesignation3", "Room6Length", "OpenHouseDate1", "Level6", "Room5", "Room9Desc3", "WashroomsType2Level", "OpenHouseFrom2", "WashroomsType5Level", "Acreage", "Exterior2", "WashroomsType4", "Area", "PhyHandiEquipped", "Room10Width", "HeatSource", "HeatIncluded", "OriginalPrice", "Room9Length", "Room2Length", "PropertyFeatures5", "RemarksForClients", "Kitchens", "PropertyFeatures2", "Room12Desc3", "Room6Desc2", "Room10Length", "Room5Desc2", "Level2", "Room1Desc3", "Room9", "ClosedDate", "Room4Width", "Room7Width", "AllInclusive", "CentralVac", "KitchensPlus", "PropertyFeatures1", "OpenHouseTo3", "Room4Length", "LotSizeCode", "Room9Desc2", "VirtualTourUploadDate", "DaysOnMarket", "Room8Desc1", "Room3", "GarageSpaces", "CertLevel", "UtilitiesCable", "Sewers", "GarageType", "Exterior1", "Room11Length", "ExtensionEntryDate", "UtilitiesHydro", "LotFront", "CableTVIncluded", "Room1Desc2", "Room2Desc1", "Elevator", "FrontingOnNSEW", "Room6", "OpenHouseTo2", "DisplayAddressOnInternet", "SpecialDesignation1", "Community", "LegalDescription", "ListBrokerage", "Room7Desc1", "WashroomsType3", "TypeOwn1Out", "WashroomsType1", "PropertyFeatures3", "OpenHouseTo1", "CommonElementsIncluded", "UtilitiesGas", "ExpiryDate", "Level8", "CommunityCode", "Room11Desc3", "Street", "OpenHouseFrom1", "LaundryAccess", "DistributeToInternetPortals", "Assessment", "OpenHouseDate3", "Room8Desc2", "SpecialDesignation2", "CommissionCoOpBrokerage", "Extras", "Style", "UtilitiesTelephone", "BedroomsPlus", "ParkingIncluded", "SaleLease", "Room7Desc2", "PropertyFeatures4", "PixUpdtedDt", "Room3Desc3", "Room2Width", "ParkCostMo", "Room1Width", "TaxYear", "SoldPrice", "Basement2", "LaundryLevel", "StreetDirection", "Room8", "Room9Width", "PrivateEntrance", "Municipality", "Map", "LotDepth", "Room3Desc1", "UnavailableDate", "WaterSupplyTypes", "Room11", "Room4", "SpecialDesignation5", "AssessmentYear", "PaymentFrequency", "OpenHouseDate2", "Room4Desc2", "AptUnit", "WashroomsType3Level", "MunicipalityDistrict", "ParkingSpaces", "EnergyCertification", "MapColumn", "Room9Desc1", "PropertyFeatures6", "TerminatedDate", "Room5Desc3", "Rooms", "WashroomsType2Pcs", "MapRow", "PostalCode", "TypeOwnSrch", "Room8Length", "WaterIncluded", "Province", "Room7", "Level9", "Retirement", "Room1", "LeasedTerms", "Room3Width", "Room10Desc3", "Waterfront", "WashroomsType3Pcs", "Room1Length", "Water", "WashroomsType4Level", "ListingEntryDate", "LeaseAgreement", "Room2Desc2", "Room12Length", "Room5Length", "Level10", "WashroomsType5Pcs", "HeatType", "PriorLSC", "Washrooms", "Room2", "Furnished", "StreetName", "Room8Width", "Bedrooms", "Room1Desc1", "Room7Desc3", "Taxes", "VirtualTourURL", "FamilyRoom", "SellerPropertyInfoStatement", "Room12Desc1", "Room5Desc1", "Room6Width", "WaterBodyName", "WaterBodyType", "WaterFrontage", "Shoreline1", "Shoreline2", "ShorelineAllowance", "ShorelineExposure", "AlternativePower1", "AlternativePower2", "EasementsRestrictions1", "EasementsRestrictions2", "EasementsRestrictions3", "EasementsRestrictions4", "RuralServices1", "RuralServices2", "RuralServices3", "RuralServices4", "RuralServices5", "Sewage2", "WaterDeliveryFeatures1", "WaterfrontAccBldgs1", "WaterfrontAccBldgs2", "ParcelOfTiedLand", "TotalParkingSpaces", "Link", "LinkComment", "AccessToProperty1", "AccessToProperty2", "WaterFeatures1", "WaterFeatures2", "WaterFeatures3", "WaterFeatures4", "WaterFeatures5", "PossessionDate", "Latitude", "Longitude" })
                                 {
                                     try
                                     {
